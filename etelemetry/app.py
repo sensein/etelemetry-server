@@ -1,4 +1,4 @@
-import asyncio
+# import asyncio
 from sanic import Sanic
 from sanic import response
 from sanic.exceptions import abort
@@ -8,6 +8,7 @@ from .utils import is_cached
 from .getters import fetch_version
 
 app = Sanic('etelemetry')
+
 
 @app.route("/projects/<project:path>")
 async def et_request(request, project: str):
@@ -30,13 +31,17 @@ async def et_request(request, project: str):
     cached = True
     status = None
     version = await is_cached(owner, repo)
+    print(version)
     if not version:
         cached = False
         status, version = await fetch_version(owner, repo)
-    await MongoClientHelper().db_insert(request, owner, repo, version, cached, status)
+    await MongoClientHelper().db_insert(
+        request.ip, owner, repo, version, cached, status
+    )
     if not version:
         abort(404)
     return response.json({"version": version})
+
 
 def get_parser():
     from argparse import ArgumentParser
@@ -46,10 +51,12 @@ def get_parser():
     parser.add_argument("--port", default=8000, help="server port")
     return parser
 
+
 def main(argv=None):
     parser = get_parser()
     args = parser.parse_args(argv)
     app.run(host=args.host, port=args.port)
+
 
 if __name__ == '__main__':
     main()

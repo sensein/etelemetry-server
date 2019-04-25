@@ -7,10 +7,18 @@ from . import CACHEDIR
 
 timefmt = "%Y-%m-%d'T'%H:%M:%SZ"
 
+
+def last_file_mod(fl):
+    """Return a file's last modification time as UTC time string"""
+    fl_time = datetime.datetime.utcfromtimestamp(fl.stat().st_mtime)
+    return fl_time.strftime(timefmt)
+
+
 def get_current_time():
     """Return local time as UTC time string"""
     cur_time = datetime.datetime.now(datetime.timezone.utc)
     return cur_time.strftime(timefmt)
+
 
 def utc_timediff(t1, t2):
     """
@@ -26,7 +34,8 @@ def utc_timediff(t1, t2):
     timedelt = time1 - time2
     return abs(timedelt.total_seconds())
 
-async def is_cached(owner, repo, stale_time=3600):
+
+async def is_cached(owner, repo, stale_time=21600):
     """
     Search for project cache - if found and valid, return it.
 
@@ -37,11 +46,13 @@ async def is_cached(owner, repo, stale_time=3600):
     if not cached.exists():
         return False
     async with aiofiles.open(str(cached), mode='r') as fp:
-        info = await json.load(fp)
+        infos = await fp.read()
+    info = json.loads(infos)
     lastmod = info.get("last_update")
     if not lastmod or (utc_timediff(lastmod, get_current_time()) > stale_time):
         return False
     return info.get("version")
+
 
 async def write_cache(owner, repo, version):
     """
@@ -51,7 +62,9 @@ async def write_cache(owner, repo, version):
     """
     cached = CACHEDIR / "{}.{}.json".format(owner, repo)
     async with aiofiles.open(cached, 'w') as fp:
-        await json.dump({'version': version,
-                         'last_update': get_current_time()},
-                        fp)
+        # await json.dump({'version': version,
+        #                  'last_update': get_current_time()},
+        #                 fp)
+        await fp.write(json.dumps(
+            {"version": version, "last_update": get_current_time()}))
     return True
