@@ -2,7 +2,8 @@ from setuptools import setup, find_packages
 
 _REQUIRES = [
     "sanic",
-    "requests",
+    "aiohttp",
+    "motor",
 ]
 
 setup(
