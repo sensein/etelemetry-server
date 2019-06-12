@@ -9,10 +9,21 @@ $ pip install https://github.com/mgxd/etelemetry/archive/master.zip
 
 ### Usage
 
+
+###### With docker-compose
+
+```
+docker-compose up
+```
+
+By default, will be listening to port `8000`.
+
+###### Local
+
 To start the server:
 
 ```
-$ et [--host] [--port] up
+$ et up [--host] [--port]
 ```
 
 Ensure the mongodb daemon is up and runnning
@@ -20,6 +31,7 @@ Ensure the mongodb daemon is up and runnning
 ```
 $ service mongod status
 ...
-# if it is not, start it (requires sudo)
+
+# if it is not, start it
 $ service mongod start
 ```
