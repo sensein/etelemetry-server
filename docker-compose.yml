@@ -1,0 +1,14 @@
+version: "3.7"
+services:
+
+  server:
+    build: .
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+
+  db:
+    image: "mongo:4.1.13-bionic"
+    ports:
+      - "12017:12017"

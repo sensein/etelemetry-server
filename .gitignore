@@ -1,2 +1,4 @@
 *.egg-info/
 .vscode/
+.ipynb_checkpoints/
+*.ipynb
