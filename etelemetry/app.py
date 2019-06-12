@@ -31,7 +31,6 @@ async def et_request(request, project: str):
     cached = True
     status = None
     version = await is_cached(owner, repo)
-    print(version)
     if not version:
         cached = False
         status, version = await fetch_version(owner, repo)
