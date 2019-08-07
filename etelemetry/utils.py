@@ -62,9 +62,6 @@ async def write_cache(owner, repo, version):
     """
     cached = CACHEDIR / "{}.{}.json".format(owner, repo)
     async with aiofiles.open(cached, 'w') as fp:
-        # await json.dump({'version': version,
-        #                  'last_update': get_current_time()},
-        #                 fp)
         await fp.write(json.dumps(
             {"version": version, "last_update": get_current_time()}))
     return True

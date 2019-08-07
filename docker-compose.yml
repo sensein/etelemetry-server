@@ -12,8 +12,6 @@ services:
   mongodb:
     image: "mongo:4.1.13-bionic"
     container_name: "mongodb"
-    env_file:
-      - ./mongo.env
     ports:
       - "12017:12017"
     volumes:
