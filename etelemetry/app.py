@@ -1,4 +1,4 @@
-# import asyncio
+import aiohttp
 from sanic import Sanic
 from sanic import response
 from sanic.exceptions import abort
@@ -8,6 +8,17 @@ from .utils import is_cached
 from .getters import fetch_version
 
 app = Sanic('etelemetry')
+
+
+@app.listener('before_server_start')
+def init(app, loop):
+    app.session = aiohttp.ClientSession(loop=loop)
+
+
+@app.listener('after_server_stop')
+def finish(app, loop):
+    loop.run_until_complete(app.session.close())
+    loop.close()
 
 
 @app.route("/projects/<project:path>")
@@ -33,7 +44,7 @@ async def et_request(request, project: str):
     version = await is_cached(owner, repo)
     if not version:
         cached = False
-        status, version = await fetch_version(owner, repo)
+        status, version = await fetch_version(app.session, owner, repo)
     await MongoClientHelper().db_insert(
         request.ip, owner, repo, version, cached, status
     )
@@ -45,16 +56,17 @@ async def et_request(request, project: str):
 def get_parser():
     from argparse import ArgumentParser
     parser = ArgumentParser()
-    parser.add_argument("command", choices=("up",), help="command")
+    parser.add_argument("command", choices=("up",), help="action")
     parser.add_argument("--host", default="0.0.0.0", help="hostname")
     parser.add_argument("--port", default=8000, help="server port")
+    parser.add_argument("--workers", default=1, help="worker processes")
     return parser
 
 
 def main(argv=None):
     parser = get_parser()
-    args = parser.parse_args(argv)
-    app.run(host=args.host, port=args.port)
+    pargs = parser.parse_args(argv)
+    app.run(**vars(pargs))
 
 
 if __name__ == '__main__':

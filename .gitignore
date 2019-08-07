@@ -2,3 +2,5 @@
 .vscode/
 .ipynb_checkpoints/
 *.ipynb
+data/
+logs/

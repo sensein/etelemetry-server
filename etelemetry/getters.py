@@ -1,5 +1,3 @@
-import aiohttp
-
 from . import GITHUB_API_URL
 from .utils import write_cache
 
@@ -11,13 +9,12 @@ async def fetch_response(session, url):
     return status, resp
 
 
-async def fetch_version(owner, repo):
+async def fetch_version(session, owner, repo):
     """Query GitHub API and write to cache"""
     project = "/".join([owner, repo])
-    async with aiohttp.ClientSession() as session:
-        status, resp = await fetch_response(
-            session, GITHUB_API_URL.format(project))
-
+    status, resp = await fetch_response(
+        session, GITHUB_API_URL.format(project)
+    )
     vtag = resp.get('tag_name')
     if vtag and vtag.startswith('v'):
         vtag = vtag[1:]
