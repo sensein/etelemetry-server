@@ -42,7 +42,7 @@ async def is_cached(owner, repo, stale_time=21600):
     :param project: Github project in the form of "owner/repo"
     :param stale_time: limit until cached results are stale (secs)
     """
-    cached = CACHEDIR / "{}.{}.json".format(owner, repo)
+    cached = CACHEDIR / "{}--{}.json".format(owner, repo)
     if not cached.exists():
         return False
     async with aiofiles.open(str(cached), mode='r') as fp:
@@ -60,7 +60,7 @@ async def write_cache(owner, repo, version):
 
     TODO: consider moving towards relational DB
     """
-    cached = CACHEDIR / "{}.{}.json".format(owner, repo)
+    cached = CACHEDIR / "{}--{}.json".format(owner, repo)
     async with aiofiles.open(cached, 'w') as fp:
         await fp.write(json.dumps(
             {"version": version, "last_update": get_current_time()}))

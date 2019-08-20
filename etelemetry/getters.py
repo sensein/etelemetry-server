@@ -2,18 +2,18 @@ from . import GITHUB_API_URL
 from .utils import write_cache
 
 
-async def fetch_response(session, url):
-    async with session.get(url) as response:
+async def fetch_response(app, url):
+    async with app.sem, app.session.get(url) as response:
         resp = await response.json()
-    status = response.status
+        status = response.status
     return status, resp
 
 
-async def fetch_version(session, owner, repo):
+async def fetch_version(app, owner, repo):
     """Query GitHub API and write to cache"""
     project = "/".join([owner, repo])
     status, resp = await fetch_response(
-        session, GITHUB_API_URL.format(project)
+        app, GITHUB_API_URL.format(project)
     )
     vtag = resp.get('tag_name')
     if vtag and vtag.startswith('v'):

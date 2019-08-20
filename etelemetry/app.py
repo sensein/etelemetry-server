@@ -1,24 +1,24 @@
 import aiohttp
-from sanic import Sanic
-from sanic import response
+import asyncio
+from sanic import Sanic, response
 from sanic.exceptions import abort
 
 from .backend import MongoClientHelper
-from .utils import is_cached
 from .getters import fetch_version
+from .utils import is_cached
 
 app = Sanic('etelemetry')
 
 
 @app.listener('before_server_start')
-def init(app, loop):
+async def init(app, loop):
+    app.sem = asyncio.Semaphore(1, loop=loop)
     app.session = aiohttp.ClientSession(loop=loop)
 
 
 @app.listener('after_server_stop')
-def finish(app, loop):
-    loop.run_until_complete(app.session.close())
-    loop.close()
+async def finish(app, loop):
+    await app.session.close()
 
 
 @app.route("/projects/<project:path>")
@@ -44,13 +44,18 @@ async def et_request(request, project: str):
     version = await is_cached(owner, repo)
     if not version:
         cached = False
-        status, version = await fetch_version(app.session, owner, repo)
+        status, version = await fetch_version(app, owner, repo)
     await MongoClientHelper().db_insert(
         request.ip, owner, repo, version, cached, status
     )
     if not version:
         abort(404)
     return response.json({"version": version})
+
+
+@app.route("/")
+async def test(request):
+    return response.json({"hello": "world"})
 
 
 def get_parser():
