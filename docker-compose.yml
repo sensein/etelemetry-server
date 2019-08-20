@@ -5,7 +5,7 @@ services:
     build: .
     container_name: "et-server"
     ports:
-      - "8000:8000"
+      - 8000
     depends_on:
       - mongodb
 
@@ -13,7 +13,7 @@ services:
     image: "mongo:4.1.13-bionic"
     container_name: "mongodb"
     ports:
-      - "12017:12017"
+      - 27017
     volumes:
       - ${DB_DATA_DIR}:/data/db
       - ${DB_LOG_DIR}:/logs/db
