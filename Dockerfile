@@ -4,6 +4,6 @@ FROM sanicframework/sanic:LTS
 WORKDIR /opt
 COPY . .
 
-RUN pip3 install .
+RUN pip3 install -e .
 
 ENTRYPOINT ["et", "up"]

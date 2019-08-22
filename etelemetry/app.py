@@ -3,7 +3,8 @@ import asyncio
 from sanic import Sanic, response
 from sanic.exceptions import abort
 
-from .backend import MongoClientHelper
+from . import logger, CACHEDIR
+from .database import MongoClientHelper
 from .getters import fetch_version
 from .utils import is_cached
 
@@ -14,6 +15,10 @@ app = Sanic('etelemetry')
 async def init(app, loop):
     app.sem = asyncio.Semaphore(1, loop=loop)
     app.session = aiohttp.ClientSession(loop=loop)
+    app.mongo = MongoClientHelper()
+    logger.info("Using %s as cache directory" % str(CACHEDIR))
+    # ensure mongo is responsive
+    await app.mongo.is_valid()
 
 
 @app.listener('after_server_stop')
@@ -45,7 +50,7 @@ async def et_request(request, project: str):
     if not version:
         cached = False
         status, version = await fetch_version(app, owner, repo)
-    await MongoClientHelper().db_insert(
+    await app.mongo.db_insert(
         request.ip, owner, repo, version, cached, status
     )
     if not version:

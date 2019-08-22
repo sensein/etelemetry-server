@@ -4,6 +4,7 @@ _REQUIRES = [
     "sanic",
     "aiohttp",
     "aiofiles",
+    "requests",
     "motor",
 ]
 

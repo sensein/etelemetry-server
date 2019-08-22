@@ -4,16 +4,29 @@ services:
   server:
     build: .
     container_name: "et-server"
+    environment:
+      - DB_HOSTNAME=mongodb://mongo:27017/et
+    links:
+      - mongodb:mongo
+    networks:
+      - backend
     ports:
-      - 8000
+      - "8000:8000"
     depends_on:
       - mongodb
+    volumes:
+      - .:/opt  # reflect updates
 
   mongodb:
     image: "mongo:4.1.13-bionic"
-    container_name: "mongodb"
+    container_name: "mongo"
+    networks:
+      - backend
     ports:
-      - 27017
+      - "27017:27017"
     volumes:
       - ${DB_DATA_DIR}:/data/db
       - ${DB_LOG_DIR}:/logs/db
+
+networks:
+  backend:
