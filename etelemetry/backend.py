@@ -8,7 +8,8 @@ from .utils import get_current_time
 
 class MongoClientHelper:
     """Helper class for managing mongodb operations"""
-    client = masyncio.AsyncIOMotorClient('localhost', 27017)
+    client = masyncio.AsyncIOMotorClient(
+        os.environ.get("DB_HOSTNAME", "localhost"), 27017)
     db = client[os.environ.get("ETELEMETRY_DB", "et")]
     collection = db[os.environ.get("ETELEMETRY_COLLECTION", "v1")]
 
