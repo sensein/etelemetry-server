@@ -43,7 +43,6 @@ async def et_request(request, project: str):
     :type project: str
     :return: JSON with single key, "release"
     """
-    breakpoint()
     if '/' not in project:
         abort(400)  # return response.text("Bad response")
     owner, repo = project.split('/', 1)
@@ -55,7 +54,7 @@ async def et_request(request, project: str):
         cached = False
         status, version = await fetch_version(app, owner, repo)
     await app.mongo.db_insert(
-        request.ip, owner, repo, version, cached, status
+        request, owner, repo, version, cached, status
     )
     if not version:
         abort(404)

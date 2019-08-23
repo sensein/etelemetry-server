@@ -27,12 +27,15 @@ class MongoClientHelper:
             logger.critical("Server is not available")
             raise
 
-    async def db_insert(self, host, owner, repo, version, cached, status):
+    async def db_insert(self, request, owner, repo, version, cached, status):
         """Insert request information to db"""
+        host_ip = request.remote_addr or request.ip
+
         document = {
             "accessTime": get_current_time(),
-            "remoteAddr": host,
+            "remoteAddr": host_ip,
         }
+
         rinfo = {
             'owner': owner,
             'repository': repo,
