@@ -1,5 +1,6 @@
-import aiohttp
 import asyncio
+
+import aiohttp
 from sanic import Sanic, response
 from sanic.exceptions import abort
 
@@ -9,6 +10,7 @@ from .getters import fetch_version
 from .utils import is_cached
 
 app = Sanic('etelemetry')
+app.config.from_envvar("ETELEMETRY_APP_CONFIG")
 
 
 @app.listener('before_server_start')
@@ -44,10 +46,11 @@ async def et_request(request, project: str):
     if '/' not in project:
         abort(400)  # return response.text("Bad response")
     owner, repo = project.split('/', 1)
-    cached = True
-    status = None
     version = await is_cached(owner, repo)
-    if not version:
+    if version:
+        cached = True
+        status = 200
+    else:
         cached = False
         status, version = await fetch_version(app, owner, repo)
     await app.mongo.db_insert(
