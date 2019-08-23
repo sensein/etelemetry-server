@@ -3,7 +3,7 @@ import datetime
 import json
 import aiofiles
 
-from . import CACHEDIR
+from . import CACHEDIR, logger
 
 timefmt = "%Y-%m-%d'T'%H:%M:%SZ"
 
@@ -51,6 +51,7 @@ async def is_cached(owner, repo, stale_time=21600):
     lastmod = info.get("last_update")
     if not lastmod or (utc_timediff(lastmod, get_current_time()) > stale_time):
         return False
+    logger.info(f"Reusing {owner}/{repo} cached version.")
     return info.get("version")
 
 
