@@ -1,5 +1,6 @@
-import aiohttp
 import asyncio
+
+import aiohttp
 from sanic import Sanic, response
 from sanic.exceptions import abort
 
@@ -9,6 +10,7 @@ from .getters import fetch_version
 from .utils import is_cached
 
 app = Sanic('etelemetry')
+app.config.from_envvar("ETELEMETRY_APP_CONFIG")
 
 
 @app.listener('before_server_start')
