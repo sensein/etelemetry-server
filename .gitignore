@@ -5,3 +5,4 @@ __pycache__/
 *.ipynb
 data/
 logs/
+.pytest_cache/

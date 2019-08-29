@@ -1,24 +1,25 @@
-# etelemetry
-*ET phone home*
+# etelemetry-server
+Server for application monitoring and usage statistics.
 
-### Installation
+[Python API](https://github.com/mgxd/etelemetry-client)
+
+## Installation
 
 ```
 $ pip install https://github.com/mgxd/etelemetry/archive/master.zip
 ```
 
-### Usage
-
-
-###### With docker-compose
+## Usage
+### With docker-compose
 
 ```
-docker-compose up
+docker-compose [-f /path/to/compose/file.yml] up
 ```
 
 By default, will be listening to port `8000`.
 
-###### Local
+
+### Local
 
 To start the server:
 
@@ -34,4 +35,18 @@ $ service mongod status
 
 # if it is not, start it
 $ service mongod start
+```
+
+## Example Calls
+
+```
+# ensure server is running
+$ curl https://rig.mit.edu/et/
+
+{"hello":"world"}
+
+# check project
+$ curl https://rig.mit.edu/et/projects/mgxd/etelemetry-client
+
+{"version":"0.1"}
 ```
