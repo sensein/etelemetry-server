@@ -24,7 +24,7 @@ async def fetch_version(app, owner, repo):
         try:
             resp = resp[0]  # latest tag
         except (KeyError, IndexError):
-            pass
+            resp = {}
 
     vtag = resp.get('tag_name') or resp.get('name')
     if not vtag:
