@@ -1,4 +1,5 @@
 import asyncio
+import os
 
 import aiohttp
 from sanic import Sanic, response
@@ -10,12 +11,13 @@ from .getters import fetch_version
 from .utils import is_cached
 
 app = Sanic('etelemetry')
-app.config.from_envvar("ETELEMETRY_APP_CONFIG")
+if os.getenv("ETELEMETRY_APP_CONFIG"):
+    app.config.from_envvar("ETELEMETRY_APP_CONFIG")
 
 
 @app.listener('before_server_start')
 async def init(app, loop):
-    app.sem = asyncio.Semaphore(1, loop=loop)
+    app.sem = asyncio.Semaphore(100, loop=loop)
     app.session = aiohttp.ClientSession(loop=loop)
     app.mongo = MongoClientHelper()
     logger.info("Using %s as cache directory" % str(CACHEDIR))
@@ -44,7 +46,7 @@ async def et_request(request, project: str):
     :return: JSON with single key, "release"
     """
     if '/' not in project:
-        abort(400)  # return response.text("Bad response")
+        abort(400, message="Invalid project")
     owner, repo = project.split('/', 1)
     version = await is_cached(owner, repo)
     if version:
@@ -57,7 +59,7 @@ async def et_request(request, project: str):
         request, owner, repo, version, cached, status
     )
     if not version:
-        abort(404)
+        abort(404, "Version not found")
     return response.json({"version": version})
 
 
