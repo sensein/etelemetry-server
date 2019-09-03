@@ -9,7 +9,7 @@ _REQUIRES = [
 ]
 
 setup(
-    name="etelemetry",
+    name="etserver",
     author="Mathias Goncalves",
     version="0.0.1dev0",
     packages=find_packages(),
