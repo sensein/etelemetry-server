@@ -1,4 +1,4 @@
-from . import GITHUB_RELEASE_URL, GITHUB_TAG_URL
+from . import GITHUB_RELEASE_URL, GITHUB_TAG_URL, logger
 from .utils import write_cache
 
 
@@ -17,6 +17,7 @@ async def fetch_version(app, owner, repo):
     )
     # check for tag if no release is found
     if status == 404:
+        logger.info(f"No release found for {project}, checking tags...")
         status, resp = await fetch_response(
             app, GITHUB_TAG_URL.format(project)
         )
