@@ -14,7 +14,7 @@ setup(
     version="0.0.1dev0",
     packages=find_packages(),
     entry_points={
-        'console_scripts': ['et=etelemetry.app:main']
+        'console_scripts': ['et=etserver.app:main']
     },
     install_requires=_REQUIRES,
 )
