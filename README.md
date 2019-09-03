@@ -6,7 +6,7 @@ Server for application monitoring and usage statistics.
 ## Installation
 
 ```
-$ pip install https://github.com/mgxd/etelemetry/archive/master.zip
+$ pip install https://github.com/mgxd/etelemetry-server/archive/master.zip
 ```
 
 ## Usage
