@@ -7,7 +7,7 @@ from sanic.exceptions import abort
 
 from . import logger, CACHEDIR
 from .database import MongoClientHelper
-from .getters import fetch_version
+from .getters import fetch_version, fetch_geoloc
 from .utils import is_cached
 
 app = Sanic('etelemetry')
@@ -55,8 +55,10 @@ async def et_request(request, project: str):
     else:
         cached = False
         status, version = await fetch_version(app, owner, repo)
+    rip = request.remote_addr or request.ip
+    await fetch_geoloc(app, rip)
     await app.mongo.db_insert(
-        request, owner, repo, version, cached, status
+        rip, owner, repo, version, cached, status
     )
     if not version:
         abort(404, "Version not found")

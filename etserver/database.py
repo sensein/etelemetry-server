@@ -16,7 +16,10 @@ class MongoClientHelper:
             os.getenv("DB_HOSTNAME", 'localhost'), 27017,
         )
         self.db = self.client[os.getenv("ETELEMETRY_DB", "et")]
-        self.collection = self.db[os.getenv("ETELEMETRY_COLLECTION", "v1")]
+        # two collections: requests + geocache
+        #self.collection = self.db[os.getenv("ETELEMETRY_COLLECTION", "v1")]
+        self.requests = self.db["requests"]
+        self.geoloc = self.db["geocache"]
 
     async def is_valid(self):
         """Run mongo command to ensure valid connection"""
@@ -27,13 +30,14 @@ class MongoClientHelper:
             logger.critical("Server is not available")
             raise
 
-    async def db_insert(self, request, owner, repo, version, cached, status):
-        """Insert request information to db"""
-        host_ip = request.remote_addr or request.ip
+    async def insert_request(
+        self, rip, owner, repo, version, cached, status, geoloc=None
+    ):
+        """Insert request information into db"""
 
-        document = {
-            "accessTime": get_current_time(),
-            "remoteAddr": host_ip,
+        entry = {
+            "accessTime": await get_current_time(),
+            "remoteAddr": rip,
         }
 
         rinfo = {
@@ -43,5 +47,8 @@ class MongoClientHelper:
             'cached': cached,
             'status_code': status,
             }
-        document.update({'request': rinfo})
-        self.collection.insert_one(document)
+        entry.update({'request': rinfo})
+        self.requests.insert_one(entry)
+
+    async def find_geoloc(self, rip):
+        pass

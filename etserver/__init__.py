@@ -11,3 +11,4 @@ CACHEDIR.mkdir(parents=True, exist_ok=True)
 
 GITHUB_RELEASE_URL = 'https://api.github.com/repos/{}/releases/latest'
 GITHUB_TAG_URL = 'https://api.github.com/repos/{}/tags'
+IPSTACK_URL = 'http://api.ipstack.com/{}'
