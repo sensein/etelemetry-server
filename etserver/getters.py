@@ -6,7 +6,7 @@ from . import (
     IPSTACK_URL,
     logger
 )
-from .utils import write_cache
+from .utils import write_project_cache
 
 
 async def fetch_response(app, url, params=None):
@@ -41,7 +41,7 @@ async def fetch_version(app, owner, repo):
         return status, None
     vtag = vtag.lstrip('v')
     if status == 200:
-        await write_cache(owner, repo, vtag)
+        await write_project_cache(owner, repo, vtag)
     return status, vtag
 
 

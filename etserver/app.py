@@ -8,7 +8,7 @@ from sanic.exceptions import abort
 from . import logger, CACHEDIR
 from .database import MongoClientHelper
 from .getters import fetch_version, fetch_geoloc
-from .utils import is_cached
+from .utils import query_project_cache
 
 app = Sanic('etelemetry')
 if os.getenv("ETELEMETRY_APP_CONFIG"):
@@ -31,7 +31,7 @@ async def finish(app, loop):
 
 
 @app.route("/projects/<project:path>")
-async def et_request(request, project: str):
+async def get_project_info(request, project: str):
     """
     Check project for latest published release
 
@@ -45,10 +45,12 @@ async def et_request(request, project: str):
     :type project: str
     :return: JSON with single key, "release"
     """
-    if '/' not in project:
+    if len(project.split('/')) != 2:
         abort(400, message="Invalid project")
     owner, repo = project.split('/', 1)
-    version = await is_cached(owner, repo)
+
+    # fetch_project_info
+    version = await query_project_cache(owner, repo)
     if version:
         cached = True
         status = 200
@@ -56,12 +58,18 @@ async def et_request(request, project: str):
         cached = False
         status, version = await fetch_version(app, owner, repo)
     rip = request.remote_addr or request.ip
+
+    # fetch_geoloc
     await fetch_geoloc(app, rip)
     await app.mongo.db_insert(
         rip, owner, repo, version, cached, status
     )
     if not version:
         abort(404, "Version not found")
+
+    # TODO: developer notes from .etelemetry file in repo
+    # https://api.github.com/repos/<project>/contents/.etelemetry.yml
+    # base64 encoding
     return response.json({"version": version})
 
 

@@ -29,7 +29,7 @@ async def utc_timediff(t1, t2):
     return abs(timedelt.total_seconds())
 
 
-async def is_cached(owner, repo, stale_time=21600):
+async def query_project_cache(owner, repo, stale_time=21600):
     """
     Search for project cache - if found and valid, return it.
 
@@ -52,7 +52,7 @@ async def is_cached(owner, repo, stale_time=21600):
     return info.get("version")
 
 
-async def write_cache(owner, repo, version):
+async def write_project_cache(owner, repo, version):
     """
     Write to cache file
 
