@@ -6,7 +6,7 @@ from . import (
     IPSTACK_URL,
     logger
 )
-from .utils import write_project_cache
+from .utils import query_project_cache, write_project_cache
 
 
 async def fetch_response(app, url, params=None):
@@ -19,30 +19,77 @@ async def fetch_response(app, url, params=None):
     return status, resp
 
 
-async def fetch_version(app, owner, repo):
-    """Query GitHub API and write to cache"""
-    project = "/".join((owner, repo))
-    status, resp = await fetch_response(
-        app, GITHUB_RELEASE_URL.format(project)
+async def fetch_project(app, owner, repo):
+    """
+    Reuse cached information or query GitHub API for project information.
+
+    1) If no cache is found, query GitHub API and write to cache
+    2) If cache is found but query time is insufficient, query and regenerate
+    3) Otherwise, use cached version
+
+    Parameters
+    ----------
+    app : Sanic
+        server app
+    owner : str
+        GitHub user or organization
+    repo : str
+        GitHub repository
+
+    Returns
+    -------
+    project_info : dict
+        Composed of required 'version' field with additional optional fields
+    """
+    status = 200
+    project_info = await query_project_cache(owner, repo)
+    if project_info is None:
+        # unable to reuse cache
+        status, project_info = await fetch_project_version(app, owner, repo)
+    return status, project_info
+
+
+async def fetch_project_version(app, owner, repo):
+    """
+    Query GitHub API and write to cache
+
+    Parameters
+    ----------
+    app : Sanic
+        server app
+    owner : str
+        GitHub user or organization
+    repo : str
+        GitHub repository
+
+    Returns
+    -------
+    status_code : int
+        Status code of response
+    project_info : dict
+        Composed of required 'version' field with additional optional fields
+    """
+
+    status_code, resp = await fetch_response(
+        app, GITHUB_RELEASE_URL.format(owner=owner, repo=repo)
     )
     # check for tag if no release is found
-    if status == 404:
-        logger.info(f"No release found for {project}, checking tags...")
+    if status_code == 404:
+        logger.info(f"No release found for {owner}/{repo}, checking tags...")
         status, resp = await fetch_response(
-            app, GITHUB_TAG_URL.format(project)
+            app, GITHUB_TAG_URL.format(owner=owner, repo=repo)
         )
         try:
             resp = resp[0]  # latest tag
         except (KeyError, IndexError):
+            # invalid JSON
             resp = {}
 
-    vtag = resp.get('tag_name') or resp.get('name')
-    if not vtag:
-        return status, None
-    vtag = vtag.lstrip('v')
-    if status == 200:
-        await write_project_cache(owner, repo, vtag)
-    return status, vtag
+    version = (resp.get('tag_name') or resp.get('name', "Unknown")).lstrip('v')
+
+    if status_code == 200:
+        await write_project_cache(owner, repo, version)
+    return status_code, project_info
 
 
 async def fetch_geoloc(app, rip):

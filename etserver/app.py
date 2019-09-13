@@ -7,8 +7,8 @@ from sanic.exceptions import abort
 
 from . import logger, CACHEDIR
 from .database import MongoClientHelper
-from .getters import fetch_version, fetch_geoloc
-from .utils import query_project_cache
+from .getters import fetch_project, fetch_geoloc
+# from .utils import query_project_cache
 
 app = Sanic('etelemetry')
 if os.getenv("ETELEMETRY_APP_CONFIG"):
@@ -33,30 +33,27 @@ async def finish(app, loop):
 @app.route("/projects/<project:path>")
 async def get_project_info(request, project: str):
     """
-    Check project for latest published release
-
-    1) If no cache is found, query GitHub API and write to cache
-    2) If cache is found but query time is insufficient, query and regenerate
-    3) If cache is found and query time is acceptable, use cached version
+    GETs GitHub project information.
 
     :param request: The request object
     :type request: Request
-    :param project: Github project in the form of "owner/repo"
+    :param project: GitHub project in the form of "owner/repo"
     :type project: str
     :return: JSON with single key, "release"
     """
     if len(project.split('/')) != 2:
         abort(400, message="Invalid project")
-    owner, repo = project.split('/', 1)
+    owner, repo = project.split('/')
 
     # fetch_project_info
-    version = await query_project_cache(owner, repo)
-    if version:
-        cached = True
-        status = 200
-    else:
-        cached = False
-        status, version = await fetch_version(app, owner, repo)
+    project_info = await fetch_project(app, owner, repo)
+    # version = await query_project_cache(owner, repo)
+    # if version:
+    #     cached = True
+    #     status = 200
+    # else:
+    #     cached = False
+    #     status, version = await fetch_version(app, owner, repo)
     rip = request.remote_addr or request.ip
 
     # fetch_geoloc

@@ -38,25 +38,24 @@ async def query_project_cache(owner, repo, stale_time=21600):
     """
     cache = CACHEDIR / "{}--{}.json".format(owner, repo)
     if not cache.exists():
-        return False
+        return
 
-    async with aiofiles.open(str(cache), mode='r') as fp:
-        infos = await fp.read()
-    info = json.loads(infos)
-    lastmod = info.get("last_update")
-    if not lastmod or (
+    async with aiofiles.open(str(cache)) as fp:
+        project_info = json.loads(await fp.read())
+
+    lastmod = project_info.get("last_update")
+    if (
+        lastmod is None or
         await utc_timediff(lastmod, await get_current_time()) > stale_time
     ):
-        return False
+        return
     logger.info(f"Reusing {owner}/{repo} cached version.")
-    return info.get("version")
+    return project_info
 
 
-async def write_project_cache(owner, repo, version):
+async def write_project_cache(owner, repo, project_info):
     """
-    Write to cache file
-
-    TODO: consider moving towards relational DB
+    Write project information to cached file
     """
     cache = CACHEDIR / "{}--{}.json".format(owner, repo)
     to_cache = {
