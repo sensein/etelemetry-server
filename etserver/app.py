@@ -47,17 +47,10 @@ async def get_project_info(request, project: str):
 
     # fetch_project_info
     project_info = await fetch_project(app, owner, repo)
-    # version = await query_project_cache(owner, repo)
-    # if version:
-    #     cached = True
-    #     status = 200
-    # else:
-    #     cached = False
-    #     status, version = await fetch_version(app, owner, repo)
-    rip = request.remote_addr or request.ip
 
+    rip = request.remote_addr or request.ip
     # fetch_geoloc
-    await fetch_geoloc(app, rip)
+    geoloc = await fetch_geoloc(app, rip)
     await app.mongo.db_insert(
         rip, owner, repo, version, cached, status
     )

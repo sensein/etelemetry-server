@@ -39,14 +39,16 @@ async def fetch_project(app, owner, repo):
     Returns
     -------
     project_info : dict
-        Composed of required 'version' field with additional optional fields
+        Composed of `version`, `cached`, `status`, and `notes` fields
     """
-    status = 200
     project_info = await query_project_cache(owner, repo)
     if project_info is None:
         # unable to reuse cache
-        status, project_info = await fetch_project_version(app, owner, repo)
-    return status, project_info
+        project_info = await fetch_project_version(app, owner, repo)
+        project_info["cached"] = False
+    else:
+        project_info["cached"] = True
+    return project_info
 
 
 async def fetch_project_version(app, owner, repo):
@@ -69,6 +71,7 @@ async def fetch_project_version(app, owner, repo):
     project_info : dict
         Composed of required 'version' field with additional optional fields
     """
+    project_info = {}
 
     status_code, resp = await fetch_response(
         app, GITHUB_RELEASE_URL.format(owner=owner, repo=repo)
@@ -86,13 +89,19 @@ async def fetch_project_version(app, owner, repo):
             resp = {}
 
     version = (resp.get('tag_name') or resp.get('name', "Unknown")).lstrip('v')
-
+    project_info["version"] = version
+    project_info["status"] = status_code
+    # TODO: query .etelemetry.json to add additional fields to project_info
     if status_code == 200:
-        await write_project_cache(owner, repo, version)
-    return status_code, project_info
+        await write_project_cache(owner, repo, project_info)
+    return project_info
 
 
 async def fetch_geoloc(app, rip):
+
+    # check cache for rip
+
+    # if not found, send a request
     access_key = os.getenv("IPSTACK_API_KEY")
     if access_key is None:
         logger.warn("Access key is undefined")
