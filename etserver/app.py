@@ -7,7 +7,7 @@ from sanic.exceptions import abort
 
 from . import logger, CACHEDIR
 from .database import MongoClientHelper
-from .getters import fetch_project, fetch_geoloc
+from .getters import fetch_project, fetch_request_info
 # from .utils import query_project_cache
 
 app = Sanic('etelemetry')
@@ -44,23 +44,17 @@ async def get_project_info(request, project: str):
     if len(project.split('/')) != 2:
         abort(400, message="Invalid project")
     owner, repo = project.split('/')
-
-    # fetch_project_info
+    request_ip = request.remote_addr or request.ip
+    # get information about project
     project_info = await fetch_project(app, owner, repo)
-
-    rip = request.remote_addr or request.ip
-    # fetch_geoloc
-    geoloc = await fetch_geoloc(app, rip)
-    await app.mongo.db_insert(
-        rip, owner, repo, version, cached, status
-    )
-    if not version:
+    if not project_info.get('version'):
         abort(404, "Version not found")
-
-    # TODO: developer notes from .etelemetry file in repo
-    # https://api.github.com/repos/<project>/contents/.etelemetry.yml
-    # base64 encoding
-    return response.json({"version": version})
+    await app.mongo.insert_request(
+        request_ip, owner, repo, project_info
+    )
+    # get request information
+    await fetch_request_info(app, request_ip)
+    return response.json(project_info)
 
 
 @app.route("/")

@@ -41,6 +41,9 @@ async def fetch_project(app, owner, repo):
     project_info : dict
         Composed of `version`, `cached`, `status`, and `notes` fields
     """
+    # TODO: developer notes from .etelemetry file in repo
+    # https://api.github.com/repos/<project>/contents/.etelemetry.yml
+    # base64 encoding
     project_info = await query_project_cache(owner, repo)
     if project_info is None:
         # unable to reuse cache
@@ -97,9 +100,13 @@ async def fetch_project_version(app, owner, repo):
     return project_info
 
 
-async def fetch_geoloc(app, rip):
+async def fetch_request_info(app, rip):
 
     # check cache for rip
+    cached = await app.mongo.query_ip(rip)
+    if cached is not None:
+        # already have information, nothing to do here
+        return
 
     # if not found, send a request
     access_key = os.getenv("IPSTACK_API_KEY")
@@ -125,7 +132,6 @@ async def fetch_geoloc(app, rip):
     if len(vals) <= 2:
         logger.info(f"Invalid geoloc information for {rip}")
         return
-    # new valid information, so write to cache
 
     keys = (
         "continent_name",
@@ -137,4 +143,6 @@ async def fetch_geoloc(app, rip):
         "longitude"
     )
     geoloc = {key: resp.get(key) for key, _ in resp if key in keys}
-    return geoloc
+    geoloc['remote_addr'] = rip
+    # cache for future requests
+    await app.mongo.insert_geoloc(rip, geoloc)
