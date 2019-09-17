@@ -19,7 +19,7 @@ async def init(app, loop):
     app.sem = asyncio.Semaphore(100, loop=loop)
     app.session = aiohttp.ClientSession(loop=loop)
     app.mongo = MongoClientHelper()
-    logger.info("Using %s as cache directory" % str(CACHEDIR))
+    logger.info("Using %s as project cache directory" % str(CACHEDIR))
     # ensure mongo is responsive
     await app.mongo.is_valid()
 

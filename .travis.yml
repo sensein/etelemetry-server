@@ -12,7 +12,7 @@ services: mongodb
 install:
 - pip install -e .[test]
 script:
-- pytest -vs --cov etserver --cov-config .coveragerc --cov-report xml:cov.xml --doctest-modules
+- pytest -v --cov etserver --cov-config .coveragerc --cov-report xml:cov.xml --doctest-modules
   etserver
 after_success:
 - codecov --file cov.xml --flags unittests -e TRAVIS_JOB_NUMBER
