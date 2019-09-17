@@ -62,8 +62,12 @@ async def get_project_info(request, project: str):
 
 
 @app.route("/")
-async def test(request):
-    return response.json({"etelemetry server version": __version__})
+async def server_info(request):
+    return response.json(
+        {"package": "etelemetry-server",
+         "version": __version__,
+         "message": "ET phones home"}
+    )
 
 
 def get_parser():
