@@ -101,9 +101,10 @@ async def fetch_project_version(app, owner, repo):
 
 
 async def fetch_request_info(app, rip):
+    """Reuse cache or query request information"""
 
     # check cache for rip
-    cached = await app.mongo.query_ip(rip)
+    cached = await app.mongo.query_geocookie(rip)
     if cached is not None:
         # already have information, nothing to do here
         return
@@ -119,7 +120,7 @@ async def fetch_request_info(app, rip):
         "hostname": 1
     }
     status, resp = await fetch_response(
-        app, IPSTACK_URL.format(rip), params
+        app, IPSTACK_URL.format(ip=rip), params
     )
     if status != 200:
         logger.info(f"Geoloc failed with code {resp.status}")
@@ -142,7 +143,7 @@ async def fetch_request_info(app, rip):
         "latitude",
         "longitude"
     )
-    geoloc = {key: resp.get(key) for key, _ in resp if key in keys}
+    geoloc = {key: resp.get(key) for key, _ in resp.items() if key in keys}
     geoloc['remote_addr'] = rip
     # cache for future requests
-    await app.mongo.insert_geoloc(rip, geoloc)
+    await app.mongo.insert_geo(rip, geoloc)

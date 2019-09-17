@@ -49,11 +49,16 @@ async def get_project_info(request, project: str):
     project_info = await fetch_project(app, owner, repo)
     if not project_info.get('version'):
         abort(404, "Version not found")
-    await app.mongo.insert_request(
+    await app.mongo.insert_project(
         request_ip, owner, repo, project_info
     )
     # get request information
     await fetch_request_info(app, request_ip)
+    # keys exclude for response
+    crud = ('status', 'last_update', 'cached')
+    for k in crud:
+        if k in project_info:
+            del project_info[k]
     return response.json(project_info)
 
 

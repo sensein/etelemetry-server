@@ -28,36 +28,37 @@ class MongoClientHelper:
             logger.critical("Server is not available")
             raise
 
-    async def insert_request(
-        self, rip, owner, repo, version, cached, status, geoloc=None
-    ):
-        """Insert request information into collection"""
+    async def insert_project(self, rip, owner, repo, project_info):
+        """Insert project information into collection"""
 
-        entry = {
-            "access_time": await get_current_time(),
-            "remote_addr": rip,
-        }
+        doc = await gen_mongo_doc(rip)
 
         rinfo = {
             'owner': owner,
             'repository': repo,
-            'version': version,
-            'cached': cached,
-            'status_code': status,
+            'version': project_info.get('version'),
+            'cached': project_info.get('cached'),
+            'status_code': project_info.get('status'),
             }
-        entry.update({'request': rinfo})
-        self.requests.insert_one(entry)
+        doc.update({'request': rinfo})
+        self.requests.insert_one(doc)
 
-    async def query_geo(self, ip):
+    async def query_geocookie(self, ip):
         """Search for request IP in collection"""
         entry = await self.geoloc.find_one({"remote_addr": ip})
         return entry
 
     async def insert_geo(self, rip, geoloc):
         """Cache request geo information to collection"""
-        entry = {
-            "access_time": await get_current_time(),
-            "remote_addr": rip,
-        }
-        entry.update(geoloc)
-        self.geoloc.insert_one(entry)
+        doc = await gen_mongo_doc(rip)
+        doc.update(geoloc)
+        self.geoloc.insert_one(doc)
+
+
+async def gen_mongo_doc(ip):
+    """Helper method for preparing mongo documents"""
+    doc = {
+        "access_time": await get_current_time(),
+        "remote_addr": ip
+    }
+    return doc
