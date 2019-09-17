@@ -5,10 +5,9 @@ import aiohttp
 from sanic import Sanic, response
 from sanic.exceptions import abort
 
-from . import logger, CACHEDIR
+from . import logger, CACHEDIR, __version__
 from .database import MongoClientHelper
 from .getters import fetch_project, fetch_request_info
-# from .utils import query_project_cache
 
 app = Sanic('etelemetry')
 if os.getenv("ETELEMETRY_APP_CONFIG"):
@@ -64,7 +63,7 @@ async def get_project_info(request, project: str):
 
 @app.route("/")
 async def test(request):
-    return response.json({"hello": "world"})
+    return response.json({"etelemetry server version": __version__})
 
 
 def get_parser():

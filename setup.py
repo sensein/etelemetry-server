@@ -1,4 +1,5 @@
 from setuptools import setup, find_packages
+import versioneer
 
 _REQUIRES = [
     "sanic",
@@ -11,7 +12,8 @@ _REQUIRES = [
 setup(
     name="etserver",
     author="Mathias Goncalves",
-    version="0.0.1dev0",
+    version=versioneer.get_version(),
+    cmdclass=versioneer.get_cmdclass(),
     packages=find_packages(),
     entry_points={
         'console_scripts': ['et=etserver.app:main']
