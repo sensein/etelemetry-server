@@ -8,19 +8,13 @@ from . import CACHEDIR, logger
 timefmt = "%Y-%m-%d'T'%H:%M:%SZ"
 
 
-def last_file_mod(fl):
-    """Return a file's last modification time as UTC time string"""
-    fl_time = datetime.datetime.utcfromtimestamp(fl.stat().st_mtime)
-    return fl_time.strftime(timefmt)
-
-
-def get_current_time():
+async def get_current_time():
     """Return local time as UTC time string"""
     cur_time = datetime.datetime.now(datetime.timezone.utc)
     return cur_time.strftime(timefmt)
 
 
-def utc_timediff(t1, t2):
+async def utc_timediff(t1, t2):
     """
     Calculate the absolute difference between two UTC time strings
 
@@ -35,34 +29,35 @@ def utc_timediff(t1, t2):
     return abs(timedelt.total_seconds())
 
 
-async def is_cached(owner, repo, stale_time=21600):
+async def query_project_cache(owner, repo, stale_time=21600):
     """
     Search for project cache - if found and valid, return it.
 
     :param project: Github project in the form of "owner/repo"
     :param stale_time: limit until cached results are stale (secs)
     """
-    cached = CACHEDIR / "{}--{}.json".format(owner, repo)
-    if not cached.exists():
-        return False
-    async with aiofiles.open(str(cached), mode='r') as fp:
-        infos = await fp.read()
-    info = json.loads(infos)
-    lastmod = info.get("last_update")
-    if not lastmod or (utc_timediff(lastmod, get_current_time()) > stale_time):
-        return False
+    cache = CACHEDIR / "{}--{}.json".format(owner, repo)
+    if not cache.exists():
+        return
+
+    async with aiofiles.open(str(cache)) as fp:
+        project_info = json.loads(await fp.read())
+
+    lastmod = project_info.get("last_update")
+    if (
+        lastmod is None or
+        await utc_timediff(lastmod, await get_current_time()) > stale_time
+    ):
+        return
     logger.info(f"Reusing {owner}/{repo} cached version.")
-    return info.get("version")
+    return project_info
 
 
-async def write_cache(owner, repo, version):
+async def write_project_cache(owner, repo, project_info):
     """
-    Write to cache file
-
-    TODO: consider moving towards relational DB
+    Write project information to cached file
     """
-    cached = CACHEDIR / "{}--{}.json".format(owner, repo)
-    async with aiofiles.open(cached, 'w') as fp:
-        await fp.write(json.dumps(
-            {"version": version, "last_update": get_current_time()}))
-    return True
+    cache = CACHEDIR / "{}--{}.json".format(owner, repo)
+    project_info["last_update"] = await get_current_time()
+    async with aiofiles.open(str(cache), 'w') as fp:
+        await fp.write(json.dumps(project_info))

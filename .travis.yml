@@ -1,0 +1,18 @@
+language: python
+python:
+- 3.6
+- 3.7
+
+env:  # add IPSTACK_API_KEY
+  matrix:
+    secure: Tz1+oHCq+BLY1V66AeaW/YsesZayczwIWtpFBDDwOuon+mXtDCFDBB7gfaJIe4UaY4usxxwC1LVMDIS01Ls6eULC5Lo0XPgK4KOGvWDi9yf1HAAQO0SHC6Z7yuHcc70/jRei2cQ+mK9iDp5XkCGV3KAGbJBHIqnwYK9ZmrmYBZNdrHDA65PYNKc70BcL91zTemcIiL4O5OTl+gy1WEu/3Y0De1Y5OwJnQAICa138CWwQHaFSxJKR8W5HcmFu9VUAGbtl3HQa7sd73kpY5Ie5nYk0bYYYITRZY3yXSrFh4YaimjlF3HSavWqG4AxIaFJwn6EoOhzwVUa+gCCJle0cZon5/a2Yy9voJBviUn9+XPuT770JjPlIN9o8kwF8jIt+OHdCtG+jHwVJ2x3lOXOh2RUMW0V2x9V6FMIVb3QyflMv4O1stiAPmShSygsjrAy4fffaPVrNcrtPNMXak19h1BsL1yW1IpFT11oZjTwtnG2nEgwqDBZ75+XOKhAJyxpHXgNBb6Ot0LZNe8GgnVYbv/29uu+IppkL4wWPR/7DGHM/u14q6ZmCvY7aO4DbAj0gTn8nQZAxdZIgImpqaQkJ9gbVGqCFlxCpZqxMdAmHbtgfXUXVeBb8c0/pfVEcnvJjqwqtmNkcMrgYlQUMqS4gXoOJeCthqv2crCBP8tHFyQg=
+
+services: mongodb
+
+install:
+- pip install -e .[test]
+script:
+- pytest -v --cov etserver --cov-config .coveragerc --cov-report xml:cov.xml --doctest-modules
+  etserver
+after_success:
+- codecov --file cov.xml --flags unittests -e TRAVIS_JOB_NUMBER

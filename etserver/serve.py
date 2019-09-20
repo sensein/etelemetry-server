@@ -5,10 +5,9 @@ import aiohttp
 from sanic import Sanic, response
 from sanic.exceptions import abort
 
-from . import logger, CACHEDIR
+from . import logger, CACHEDIR, __version__
 from .database import MongoClientHelper
-from .getters import fetch_version
-from .utils import is_cached
+from .getters import fetch_project, fetch_request_info
 
 app = Sanic('etelemetry')
 if os.getenv("ETELEMETRY_APP_CONFIG"):
@@ -20,7 +19,7 @@ async def init(app, loop):
     app.sem = asyncio.Semaphore(100, loop=loop)
     app.session = aiohttp.ClientSession(loop=loop)
     app.mongo = MongoClientHelper()
-    logger.info("Using %s as cache directory" % str(CACHEDIR))
+    logger.info("Using %s as project cache directory" % str(CACHEDIR))
     # ensure mongo is responsive
     await app.mongo.is_valid()
 
@@ -31,41 +30,44 @@ async def finish(app, loop):
 
 
 @app.route("/projects/<project:path>")
-async def et_request(request, project: str):
+async def get_project_info(request, project: str):
     """
-    Check project for latest published release
-
-    1) If no cache is found, query GitHub API and write to cache
-    2) If cache is found but query time is insufficient, query and regenerate
-    3) If cache is found and query time is acceptable, use cached version
+    GETs GitHub project information.
 
     :param request: The request object
     :type request: Request
-    :param project: Github project in the form of "owner/repo"
+    :param project: GitHub project in the form of "owner/repo"
     :type project: str
     :return: JSON with single key, "release"
     """
-    if '/' not in project:
+    if len(project.split('/')) != 2:
         abort(400, message="Invalid project")
-    owner, repo = project.split('/', 1)
-    version = await is_cached(owner, repo)
-    if version:
-        cached = True
-        status = 200
-    else:
-        cached = False
-        status, version = await fetch_version(app, owner, repo)
-    await app.mongo.db_insert(
-        request, owner, repo, version, cached, status
-    )
-    if not version:
+    owner, repo = project.split('/')
+    request_ip = request.remote_addr or request.ip
+    # get information about project
+    project_info = await fetch_project(app, owner, repo)
+    if not project_info.get('version'):
         abort(404, "Version not found")
-    return response.json({"version": version})
+    await app.mongo.insert_project(
+        request_ip, owner, repo, project_info
+    )
+    # get request information
+    await fetch_request_info(app, request_ip)
+    # keys exclude for response
+    crud = ('status', 'last_update', 'cached')
+    for k in crud:
+        if k in project_info:
+            del project_info[k]
+    return response.json(project_info)
 
 
 @app.route("/")
-async def test(request):
-    return response.json({"hello": "world"})
+async def server_info(request):
+    return response.json(
+        {"package": "etelemetry-server",
+         "version": __version__,
+         "message": "ET phones home"}
+    )
 
 
 def get_parser():
