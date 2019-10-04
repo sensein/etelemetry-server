@@ -10,6 +10,11 @@ from . import logger, CACHEDIR, __version__
 from .database import MongoClientHelper
 from .getters import fetch_project, fetch_request_info
 
+if os.path.exists("/vagrant"):
+    logdir = "/vagrant"
+else:
+    logdir = os.getcwd()
+
 LOG_SETTINGS = dict(
     version=1,
     disable_existing_loggers=False,
@@ -46,17 +51,17 @@ LOG_SETTINGS = dict(
         },
         "consolefile": {
             "class": "logging.FileHandler",
-            "filename": "/vagrant/console.log",
+            "filename": f"{logdir}/console.log",
             "formatter": "generic",
         },
         "error_consolefile": {
             "class": "logging.FileHandler",
-            "filename": "/vagrant/error.log",
+            "filename": f"{logdir}/error.log",
             "formatter": "generic",
         },
         "access_consolefile": {
             "class": "logging.FileHandler",
-            "filename": "/vagrant/access.log",
+            "filename": f"{logdir}/access.log",
             "formatter": "access",
         },
     },
