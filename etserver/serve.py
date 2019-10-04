@@ -9,7 +9,71 @@ from . import logger, CACHEDIR, __version__
 from .database import MongoClientHelper
 from .getters import fetch_project, fetch_request_info
 
-app = Sanic("etelemetry")
+LOG_SETTINGS = dict(
+    version=1,
+    disable_existing_loggers=False,
+    loggers={
+        "sanic.root": {"level": "INFO", "handlers": ["console", "consolefile"]},
+        "sanic.error": {
+            "level": "INFO",
+            "handlers": ["error_console", "error_consolefile"],
+            "propagate": True,
+            "qualname": "sanic.error",
+        },
+        "sanic.access": {
+            "level": "INFO",
+            "handlers": ["access_console", "access_consolefile"],
+            "propagate": True,
+            "qualname": "sanic.access",
+        },
+    },
+    handlers={
+        "console": {
+            "class": "logging.StreamHandler",
+            "formatter": "generic",
+            "stream": sys.stdout,
+        },
+        "error_console": {
+            "class": "logging.StreamHandler",
+            "formatter": "generic",
+            "stream": sys.stderr,
+        },
+        "access_console": {
+            "class": "logging.StreamHandler",
+            "formatter": "access",
+            "stream": sys.stdout,
+        },
+        "consolefile": {
+            "class": "logging.FileHandler",
+            "filename": "/vagrant/console.log",
+            "formatter": "generic",
+        },
+        "error_consolefile": {
+            "class": "logging.FileHandler",
+            "filename": "/vagrant/error.log",
+            "formatter": "generic",
+        },
+        "access_consolefile": {
+            "class": "logging.FileHandler",
+            "filename": "/vagrant/access.log",
+            "formatter": "access",
+        },
+    },
+    formatters={
+        "generic": {
+            "format": "%(asctime)s [%(process)d] [%(levelname)s] %(message)s",
+            "datefmt": "[%Y-%m-%d %H:%M:%S %z]",
+            "class": "logging.Formatter",
+        },
+        "access": {
+            "format": "%(asctime)s - (%(name)s)[%(levelname)s][%(host)s]: "
+            + "%(request)s %(message)s %(status)d %(byte)d",
+            "datefmt": "[%Y-%m-%d %H:%M:%S %z]",
+            "class": "logging.Formatter",
+        },
+    },
+)
+app = Sanic("etelemetry", log_config=LOG_SETTINGS)
 if os.getenv("ETELEMETRY_APP_CONFIG"):
     app.config.from_envvar("ETELEMETRY_APP_CONFIG")
 
@@ -57,6 +121,24 @@ async def get_project_info(request, project: str):
         if k in project_info:
             del project_info[k]
     return response.json(project_info)
+
+
+@app.route("/stats/<project:path>")
+async def get_project_stats(request, project: str):
+    """
+    GETs project statistics from server.
+
+    :param request: The request object
+    :type request: Request
+    :param project: GitHub project in the form of "owner/repo"
+    :type project: str
+    :return: JSON with single key, "release"
+    """
+    if len(project.split("/")) != 2:
+        abort(400, message="Invalid project")
+    owner, repo = project.split("/")
+    stats = await app.mongo.get_status(owner, repo)
+    return response.json(stats)
 
 
 @app.route("/")

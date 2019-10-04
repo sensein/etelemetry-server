@@ -54,6 +54,19 @@ class MongoClientHelper:
         doc.update(geoloc)
         self.geoloc.insert_one(doc)
 
+    async def get_status(self, owner, repo):
+        n = await self.requests.count_documents(
+            {"request.owner": owner, "request.repository": repo}
+        )
+        ips = await self.requests.distinct(
+            "remote_addr", {"request.owner": owner, "request.repository": repo}
+        )
+        latlong = []
+        for ip in ips:
+            geoloc = await self.geoloc.find_one({"remote_addr": ip})
+            latlong.append((geoloc["latitude"], geoloc["longitude"]))
+        return {"counter": n, "locations": latlong}
+
 
 async def gen_mongo_doc(ip):
     """Helper method for preparing mongo documents"""
