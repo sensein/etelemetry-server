@@ -45,8 +45,8 @@ async def query_project_cache(owner, repo, stale_time=21600):
 
     lastmod = project_info.get("last_update")
     if (
-        lastmod is None or
-        await utc_timediff(lastmod, await get_current_time()) > stale_time
+        lastmod is None
+        or await utc_timediff(lastmod, await get_current_time()) > stale_time
     ):
         return
     logger.info(f"Reusing {owner}/{repo} cached version.")
@@ -59,5 +59,5 @@ async def write_project_cache(owner, repo, project_info):
     """
     cache = CACHEDIR / "{}--{}.json".format(owner, repo)
     project_info["last_update"] = await get_current_time()
-    async with aiofiles.open(str(cache), 'w') as fp:
+    async with aiofiles.open(str(cache), "w") as fp:
         await fp.write(json.dumps(project_info))

@@ -13,7 +13,7 @@ class MongoClientHelper:
 
     def __init__(self):
         self.client = amotor.AsyncIOMotorClient(
-            os.getenv("DB_HOSTNAME", 'localhost'), 27017,
+            os.getenv("DB_HOSTNAME", "localhost"), 27017
         )
         self.db = self.client[os.getenv("ETELEMETRY_DB", "et")]
         self.requests = self.db["requests"]
@@ -22,7 +22,7 @@ class MongoClientHelper:
     async def is_valid(self):
         """Run mongo command to ensure valid connection"""
         try:
-            await self.client.admin.command('ismaster')
+            await self.client.admin.command("ismaster")
             logger.info("Successful connection to mongo")
         except (ConnectionFailure, ServerSelectionTimeoutError):
             logger.critical("Server is not available")
@@ -34,13 +34,13 @@ class MongoClientHelper:
         doc = await gen_mongo_doc(rip)
 
         rinfo = {
-            'owner': owner,
-            'repository': repo,
-            'version': project_info.get('version'),
-            'cached': project_info.get('cached'),
-            'status_code': project_info.get('status'),
-            }
-        doc.update({'request': rinfo})
+            "owner": owner,
+            "repository": repo,
+            "version": project_info.get("version"),
+            "cached": project_info.get("cached"),
+            "status_code": project_info.get("status"),
+        }
+        doc.update({"request": rinfo})
         self.requests.insert_one(doc)
 
     async def query_geocookie(self, ip):
@@ -57,8 +57,5 @@ class MongoClientHelper:
 
 async def gen_mongo_doc(ip):
     """Helper method for preparing mongo documents"""
-    doc = {
-        "access_time": await get_current_time(),
-        "remote_addr": ip
-    }
+    doc = {"access_time": await get_current_time(), "remote_addr": ip}
     return doc

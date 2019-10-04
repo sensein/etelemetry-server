@@ -1,11 +1,6 @@
 import os
 
-from . import (
-    GITHUB_RELEASE_URL,
-    GITHUB_TAG_URL,
-    IPSTACK_URL,
-    logger
-)
+from . import GITHUB_RELEASE_URL, GITHUB_TAG_URL, IPSTACK_URL, logger
 from .utils import query_project_cache, write_project_cache
 
 
@@ -91,7 +86,7 @@ async def fetch_project_version(app, owner, repo):
             # invalid JSON
             resp = {}
 
-    version = (resp.get('tag_name') or resp.get('name', "Unknown")).lstrip('v')
+    version = (resp.get("tag_name") or resp.get("name", "Unknown")).lstrip("v")
     project_info["version"] = version
     project_info["status"] = status_code
     # TODO: query .etelemetry.json to add additional fields to project_info
@@ -115,13 +110,8 @@ async def fetch_request_info(app, rip):
         logger.warn("Access key is undefined")
         return
 
-    params = {
-        "access_key": access_key,
-        "hostname": 1
-    }
-    status, resp = await fetch_response(
-        app, IPSTACK_URL.format(ip=rip), params
-    )
+    params = {"access_key": access_key, "hostname": 1}
+    status, resp = await fetch_response(app, IPSTACK_URL.format(ip=rip), params)
     if status != 200:
         logger.info(f"Geoloc failed with code {resp.status}")
         return
@@ -141,9 +131,9 @@ async def fetch_request_info(app, rip):
         "city",
         "hostname",
         "latitude",
-        "longitude"
+        "longitude",
     )
     geoloc = {key: resp.get(key) for key, _ in resp.items() if key in keys}
-    geoloc['remote_addr'] = rip
+    geoloc["remote_addr"] = rip
     # cache for future requests
     await app.mongo.insert_geo(rip, geoloc)
