@@ -58,18 +58,17 @@ class MongoClientHelper:
         n = await self.requests.count_documents(
             {"request.owner": owner, "request.repository": repo}
         )
-        logger.info(n)
         ips = await self.requests.distinct(
             "remote_addr", {"request.owner": owner, "request.repository": repo}
         )
-        logger.info(ips)
-        latlong = []
+        coords = []
         for ip in ips:
             geoloc = await self.geoloc.find_one({"remote_addr": ip})
-            logger.info(geoloc)
             if geoloc:
-                latlong.append((geoloc["latitude"], geoloc["longitude"]))
-        return {"counter": n, "locations": latlong, "unique ips": len(ips)}
+                newloc = (geoloc["longitude"], geoloc["latitude"])
+                if newloc not in coords:
+                    coords.append(newloc)
+        return {"counter": n, "long-lat": coords, "unique-ips": len(ips)}
 
 
 async def gen_mongo_doc(ip):
