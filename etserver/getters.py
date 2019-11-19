@@ -1,13 +1,13 @@
 import os
 
-from . import GITHUB_RELEASE_URL, GITHUB_TAG_URL, IPSTACK_URL, logger
+from . import GITHUB_RELEASE_URL, GITHUB_TAG_URL, GITHUB_ET_FILE, IPSTACK_URL, logger
 from .utils import query_project_cache, write_project_cache
 
 
-async def fetch_response(app, url, params=None):
+async def fetch_response(app, url, params=None, content_type='application/json'):
     async with app.sem, app.session.get(url, params=params) as response:
         try:
-            resp = await response.json()
+            resp = await response.json(content_type=content_type)
         except ValueError:
             resp = await response.text()
         status = response.status
@@ -89,8 +89,18 @@ async def fetch_project_version(app, owner, repo):
     version = (resp.get("tag_name") or resp.get("name", "Unknown")).lstrip("v")
     project_info["version"] = version
     project_info["status"] = status_code
-    # TODO: query .etelemetry.json to add additional fields to project_info
+
     if status_code == 200:
+        status, resp = await fetch_response(
+            GITHUB_ET_FILE.format(owner=owner, repo=repo),
+            content_type=None
+        )
+        if status == 200:
+            project_info["bad_versions"] = resp.get("bad_versions", None)
+        else:
+            logger.info(
+                f"et file status code: {status} for {owner}/{repo}"
+            )
         await write_project_cache(owner, repo, project_info)
     return project_info
 
