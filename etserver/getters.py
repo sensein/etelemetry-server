@@ -91,7 +91,7 @@ async def fetch_project_version(app, owner, repo):
     project_info["status"] = status_code
 
     if status_code == 200:
-        status, resp = await fetch_response(
+        status, resp = await fetch_response(app,
             GITHUB_ET_FILE.format(owner=owner, repo=repo),
             content_type=None
         )
