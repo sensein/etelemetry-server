@@ -60,11 +60,13 @@ class MongoClientHelper:
         project_info = await query_project_cache(owner, repo, return_stale=True)
         year = 2019
         week = 0
-        response = []
+        response = {}
         if project_info is not None and "stats" in project_info:
-            year = project_info["stats"][-1]["year"]
-            week = project_info["stats"][-1]["week"]
-            response = project_info["stats"]
+            if isinstance(project_info["stats"], dict):
+                lastkey = sorted(project_info["stats"])[-1]
+                year, week = lastkey.split("-")
+                year, week = int(year), int(week)
+                response = project_info["stats"]
         startdate = datetime.datetime(year, 1, 1) + datetime.timedelta(
             weeks=max(week - 1, 0)
         )
@@ -101,25 +103,13 @@ class MongoClientHelper:
             },
             {"$sort": {"_id.year": 1, "_id.week": 1}},
         ]
-        logger.info(pipeline)
-        docs = []
-        async for doc in self.requests.aggregate(pipeline):
-            docs.append(doc)
-        if len(response) and len(docs):
-            if response[-1]["week"] == docs[0]["_id"]["week"]:
-                response[-1]["count"] = docs[0]["count"]
-                docs = docs[1:]
-        response = response + [
-            {
-                "year": int(val["_id"]["year"]),
-                "week": int(val["_id"]["week"]),
-                "count": val["count"],
-            }
-            for val in docs
-        ]
-        if response and project_info:
-            project_info["stats"] = response
-            await write_project_cache(owner, repo, project_info, update=False)
+        docs = {}
+        async for val in self.requests.aggregate(pipeline):
+            docs[f'{val["_id"]["year"]}-{val["_id"]["week"]}'] = val["count"]
+        if docs:
+            response.update(**docs)
+        project_info["stats"] = response
+        await write_project_cache(owner, repo, project_info, update=False)
         return response
 
 
