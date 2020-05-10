@@ -56,26 +56,24 @@ class MongoClientHelper:
         doc.update(geoloc)
         self.geoloc.insert_one(doc)
 
-    async def get_status(self, owner, repo, mode=None):
-        project_info = await query_project_cache(owner, repo, return_stale=True)
+    async def get_status(self, owner, repo, project_info):
         year = 2019
         week = 0
         response = {}
         if project_info is not None and "stats" in project_info:
-            if isinstance(project_info["stats"], dict):
-                lastkey = sorted(project_info["stats"])[-1]
-                year, week = lastkey.split("-")
-                year, week = int(year), int(week)
-                response = project_info["stats"]
+            lastkey = sorted(project_info["stats"])[-1]
+            year, week = lastkey.split("-")
+            year, week = int(year), int(week)
+            response = project_info["stats"]
         startdate = datetime.datetime(year, 1, 1) + datetime.timedelta(
             weeks=max(week - 1, 0)
         )
         pipeline = [
             {
                 "$match": {
-                    "request.owner": owner,
-                    "request.repository": repo,
                     "access_time": {"$gte": startdate.strftime(timefmt)},
+                    "request.repository": repo,
+                    "request.owner": owner,
                 }
             },
             {
@@ -108,8 +106,6 @@ class MongoClientHelper:
             docs[f'{val["_id"]["year"]}-{val["_id"]["week"]:02d}'] = val["count"]
         if docs:
             response.update(**docs)
-        project_info["stats"] = response
-        await write_project_cache(owner, repo, project_info, update=False)
         return response
 
 
