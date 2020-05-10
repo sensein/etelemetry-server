@@ -9,6 +9,7 @@ from sanic.exceptions import abort
 from . import logger, CACHEDIR, __version__
 from .database import MongoClientHelper
 from .getters import fetch_project, fetch_request_info
+from .utils import query_project_cache
 
 if os.path.exists("/vagrant"):
     logdir = "/vagrant"
@@ -139,9 +140,15 @@ async def get_project_stats(request, project: str):
     if len(project.split("/")) != 2:
         abort(400, message="Invalid project")
     owner, repo = project.split("/")
+    info = await query_project_cache(owner, repo, return_stale=True)
+    if info is None:
+        return response.text(f"No data available for {owner}/{repo}")
     stats = await app.mongo.get_status(owner, repo)
-    out = [",".join(list(stats[0]))]
-    out.extend([",".join([str(v) for v in list(item.values())]) for item in stats])
+    if stats:
+        out = [",".join(list(stats[0]))]
+        out.extend([",".join([str(v) for v in list(item.values())]) for item in stats])
+    else:
+        out = [f"No stats available for {owner}/{repo}"]
     return response.text("\n".join(out))
 
 
