@@ -140,7 +140,9 @@ async def get_project_stats(request, project: str):
         abort(400, message="Invalid project")
     owner, repo = project.split("/")
     stats = await app.mongo.get_status(owner, repo)
-    return response.json(stats)
+    out = [",".join(list(stats[0]))]
+    out.extend([",".join([str(v) for v in list(item.values())]) for item in stats])
+    return response.text("\n".join(out))
 
 
 @app.route("/")

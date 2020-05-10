@@ -57,7 +57,7 @@ class MongoClientHelper:
         self.geoloc.insert_one(doc)
 
     async def get_status(self, owner, repo, mode=None):
-        project_info = await query_project_cache(owner, repo)
+        project_info = await query_project_cache(owner, repo, return_stale=True)
         year = 2019
         week = 0
         response = []
@@ -117,7 +117,7 @@ class MongoClientHelper:
             }
             for val in docs
         ]
-        if response:
+        if response and project_info:
             project_info["stats"] = response
             await write_project_cache(owner, repo, project_info, update=False)
         return response
