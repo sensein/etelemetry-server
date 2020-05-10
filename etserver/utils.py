@@ -29,7 +29,7 @@ async def utc_timediff(t1, t2):
     return abs(timedelt.total_seconds())
 
 
-async def query_project_cache(owner, repo, stale_time=21600):
+async def query_project_cache(owner, repo, stale_time=21600, return_stale=False):
     """
     Search for project cache - if found and valid, return it.
 
@@ -47,7 +47,7 @@ async def query_project_cache(owner, repo, stale_time=21600):
     if (
         lastmod is None
         or await utc_timediff(lastmod, await get_current_time()) > stale_time
-    ):
+    ) and not return_stale:
         return
     logger.info(f"Reusing {owner}/{repo} cached version.")
     return project_info
