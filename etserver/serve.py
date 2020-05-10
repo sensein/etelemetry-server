@@ -143,10 +143,9 @@ async def get_project_stats(request, project: str):
     info = await query_project_cache(owner, repo, return_stale=True)
     if info is None:
         return response.text(f"No data available for {owner}/{repo}")
-    stats = await app.mongo.get_status(owner, repo)
-    if stats:
+    if info["stats"]:
         out = ["year-week,count"]
-        out.extend([f"{k},{v}" for k, v in sorted(stats.items())])
+        out.extend([f"{k},{v}" for k, v in sorted(info["stats"].items())])
     else:
         out = [f"No stats available for {owner}/{repo}"]
     return response.text("\n".join(out))

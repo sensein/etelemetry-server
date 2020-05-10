@@ -4,7 +4,7 @@ from . import GITHUB_RELEASE_URL, GITHUB_TAG_URL, GITHUB_ET_FILE, IPSTACK_URL, l
 from .utils import query_project_cache, write_project_cache
 
 
-async def fetch_response(app, url, params=None, content_type='application/json'):
+async def fetch_response(app, url, params=None, content_type="application/json"):
     async with app.sem, app.session.get(url, params=params) as response:
         try:
             resp = await response.json(content_type=content_type)
@@ -91,16 +91,16 @@ async def fetch_project_version(app, owner, repo):
     project_info["status"] = status_code
 
     if status_code == 200:
-        status, resp = await fetch_response(app,
-            GITHUB_ET_FILE.format(owner=owner, repo=repo),
-            content_type=None
+        status, resp = await fetch_response(
+            app, GITHUB_ET_FILE.format(owner=owner, repo=repo), content_type=None
         )
         if status == 200:
             project_info["bad_versions"] = resp.get("bad_versions", None)
         else:
-            logger.info(
-                f"et file status code: {status} for {owner}/{repo}"
-            )
+            logger.info(f"et file status code: {status} for {owner}/{repo}")
+        # update stats during cache refresh
+        stats = await app.mongo.get_status(owner, repo, project_info)
+        project_info["stats"] = stats
         await write_project_cache(owner, repo, project_info)
     return project_info
 
