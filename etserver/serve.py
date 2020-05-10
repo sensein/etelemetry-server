@@ -140,7 +140,8 @@ async def get_project_stats(request, project: str):
     if len(project.split("/")) != 2:
         abort(400, message="Invalid project")
     owner, repo = project.split("/")
-    if query_project_cache(owner, repo, return_stale=True) is None:
+    info = await query_project_cache(owner, repo, return_stale=True)
+    if info is None:
         return response.text(f"No data available for {owner}/{repo}")
     stats = await app.mongo.get_status(owner, repo)
     if stats:
