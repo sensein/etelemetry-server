@@ -8,8 +8,7 @@ from sanic.exceptions import abort
 
 from . import logger, CACHEDIR, __version__
 from .database import MongoClientHelper
-from .getters import fetch_project, fetch_request_info
-from .utils import query_project_cache
+from .getters import fetch_project, fetch_request_info, get_stats
 
 if os.path.exists("/vagrant"):
     logdir = "/vagrant"
@@ -111,8 +110,8 @@ async def get_project_info(request, project: str):
     request_ip = request.remote_addr or request.ip
     # get information about project
     project_info = await fetch_project(app, owner, repo)
-    if not project_info.get("version"):
-        abort(404, "Version not found")
+    if "version" not in project_info:
+        abort(404, f"{owner}/{repo} does not have a version")
     if "is_ci" in request.args:
         project_info["is_ci"] = True
     await app.mongo.insert_project(request_ip, owner, repo, project_info)
@@ -140,14 +139,11 @@ async def get_project_stats(request, project: str):
     if len(project.split("/")) != 2:
         abort(400, message="Invalid project")
     owner, repo = project.split("/")
-    info = await query_project_cache(owner, repo, return_stale=True)
-    if info is None:
-        return response.text(f"No data available for {owner}/{repo}")
-    if info["stats"]:
-        out = ["year-week,count"]
-        out.extend([f"{k},{v}" for k, v in sorted(info["stats"].items())])
-    else:
-        out = [f"No stats available for {owner}/{repo}"]
+    stats = await get_stats(app, owner, repo)
+    if stats is None:
+        abort(404, f"{owner}/{repo} does not have a version")
+    out = ["year-week,count"]
+    out.extend([f"{k},{v}" for k, v in sorted(stats.items())])
     return response.text("\n".join(out))
 
 
