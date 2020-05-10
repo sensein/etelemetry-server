@@ -159,7 +159,7 @@ async def get_stats(app, owner, repo):
         return None
     lastmod = project_info.get("stats_update")
     now = await get_current_time()
-    stale_stats = lastmod is None or await utc_timediff(lastmod, now) > 15
+    stale_stats = lastmod is None or await utc_timediff(lastmod, now) > 21600
     if not project_info["cached"] or "stats" not in project_info or stale_stats:
         stats = await app.mongo.get_status(owner, repo, project_info)
         project_info["stats"] = stats
