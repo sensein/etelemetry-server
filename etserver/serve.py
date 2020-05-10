@@ -118,7 +118,7 @@ async def get_project_info(request, project: str):
     # get request information
     await fetch_request_info(app, request_ip)
     # keys exclude for response
-    crud = ("status", "last_update", "cached", "stats")
+    crud = ("status", "last_update", "cached", "stats", "stats_update")
     for k in crud:
         if k in project_info:
             del project_info[k]
