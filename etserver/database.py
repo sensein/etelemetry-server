@@ -6,7 +6,7 @@ import motor.motor_asyncio as amotor
 from pymongo.errors import ConnectionFailure, ServerSelectionTimeoutError
 
 from . import logger
-from .utils import get_current_time, query_project_cache, write_project_cache, timefmt
+from .utils import get_current_time, timefmt
 
 
 class MongoClientHelper:
