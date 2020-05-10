@@ -79,6 +79,7 @@ async def fetch_project_version(app, owner, repo, project_info=None):
     status_code, resp = await fetch_response(
         app, GITHUB_RELEASE_URL.format(owner=owner, repo=repo)
     )
+    logger.info(f"RELEASEURL: {owner}/{repo}/{status_code}")
     # check for tag if no release is found
     if status_code == 404:
         logger.info(f"No release found for {owner}/{repo}, checking tags...")
@@ -90,6 +91,7 @@ async def fetch_project_version(app, owner, repo, project_info=None):
         except (KeyError, IndexError):
             # invalid JSON
             resp = {}
+        logger.info(f"TAGURL: {owner}/{repo}/{status}{resp}")
         if status == 404:
             return {}
 
@@ -155,6 +157,7 @@ async def fetch_request_info(app, rip):
 
 async def get_stats(app, owner, repo):
     project_info = await fetch_project(app, owner, repo)
+    logger.info(project_info)
     if "version" not in project_info:
         return None
     lastmod = project_info.get("stats_update")
