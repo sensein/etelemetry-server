@@ -81,6 +81,9 @@ async def fetch_project_version(app, owner, repo, project_info=None):
     )
     logger.info(f"RELEASEURL: {owner}/{repo}/{status_code}")
     # check for tag if no release is found
+    if status_code == 403:
+        return project_info
+
     if status_code == 404:
         logger.info(f"No release found for {owner}/{repo}, checking tags...")
         status, resp = await fetch_response(
@@ -92,8 +95,8 @@ async def fetch_project_version(app, owner, repo, project_info=None):
             # invalid JSON
             resp = {}
         logger.info(f"TAGURL: {owner}/{repo}/{status}{resp}")
-        if status == 404:
-            return {}
+        if status == 404 or status == 403:
+            return project_info
 
     version = (resp.get("tag_name") or resp.get("name", "Unknown")).lstrip("v")
     project_info["version"] = version
