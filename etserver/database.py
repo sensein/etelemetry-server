@@ -105,7 +105,7 @@ class MongoClientHelper:
         ]
         docs = {}
         async for val in self.requests.aggregate(pipeline):
-            docs[f'{val["_id"]["year"]}-{val["_id"]["week"]}'] = val["count"]
+            docs[f'{val["_id"]["year"]}-{val["_id"]["week"]:02d}'] = val["count"]
         if docs:
             response.update(**docs)
         project_info["stats"] = response
