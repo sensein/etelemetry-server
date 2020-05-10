@@ -1,11 +1,12 @@
 """Database worker"""
 import os
+import datetime
 
 import motor.motor_asyncio as amotor
 from pymongo.errors import ConnectionFailure, ServerSelectionTimeoutError
 
 from . import logger
-from .utils import get_current_time
+from .utils import get_current_time, query_project_cache, write_project_cache, timefmt
 
 
 class MongoClientHelper:
@@ -39,6 +40,7 @@ class MongoClientHelper:
             "version": project_info.get("version"),
             "cached": project_info.get("cached"),
             "status_code": project_info.get("status"),
+            "is_ci": project_info.get("is_ci", False),
         }
         doc.update({"request": rinfo})
         self.requests.insert_one(doc)
@@ -54,21 +56,71 @@ class MongoClientHelper:
         doc.update(geoloc)
         self.geoloc.insert_one(doc)
 
-    async def get_status(self, owner, repo):
-        n = await self.requests.count_documents(
-            {"request.owner": owner, "request.repository": repo}
+    async def get_status(self, owner, repo, mode=None):
+        project_info = await query_project_cache(owner, repo)
+        year = 2019
+        week = 0
+        response = []
+        if project_info is not None and "stats" in project_info:
+            year = project_info["stats"][-1]["year"]
+            week = project_info["stats"][-1]["week"]
+            response = project_info["stats"]
+        startdate = datetime.datetime(year, 1, 1) + datetime.timedelta(
+            weeks=max(week - 1, 0)
         )
-        ips = await self.requests.distinct(
-            "remote_addr", {"request.owner": owner, "request.repository": repo}
-        )
-        coords = []
-        for ip in ips:
-            geoloc = await self.geoloc.find_one({"remote_addr": ip})
-            if geoloc:
-                newloc = (geoloc["longitude"], geoloc["latitude"])
-                if newloc not in coords:
-                    coords.append(newloc)
-        return {"counter": n, "long-lat": coords, "unique-ips": len(ips)}
+        pipeline = [
+            {
+                "$match": {
+                    "request.owner": owner,
+                    "request.repository": repo,
+                    "access_time": {"$gte": startdate.strftime(timefmt)},
+                }
+            },
+            {
+                "$group": {
+                    "_id": {
+                        "year": {
+                            "$year": {
+                                "$dateFromString": {
+                                    "dateString": "$access_time",
+                                    "format": "%Y-%m-%d'T'%H:%M:%SZ",
+                                }
+                            }
+                        },
+                        "week": {
+                            "$week": {
+                                "$dateFromString": {
+                                    "dateString": "$access_time",
+                                    "format": "%Y-%m-%d'T'%H:%M:%SZ",
+                                }
+                            }
+                        },
+                    },
+                    "count": {"$sum": 1},
+                }
+            },
+            {"$sort": {"_id.year": 1, "_id.week": 1}},
+        ]
+        logger.info(pipeline)
+        docs = []
+        async for doc in self.requests.aggregate(pipeline):
+            docs.append(doc)
+        if len(response) and len(docs):
+            if response[-1]["week"] == docs[0]["_id"]["week"]:
+                response[-1]["count"] = docs[0]["count"]
+                docs = docs[1:]
+        response = response + [
+            {
+                "year": int(val["_id"]["year"]),
+                "week": int(val["_id"]["week"]),
+                "count": val["count"],
+            }
+            for val in docs
+        ]
+        if response:
+            project_info["stats"] = response
+            await write_project_cache(owner, repo, project_info, update=False)
+        return response
 
 
 async def gen_mongo_doc(ip):

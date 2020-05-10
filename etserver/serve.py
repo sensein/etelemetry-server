@@ -80,7 +80,7 @@ if os.getenv("ETELEMETRY_APP_CONFIG"):
 
 @app.listener("before_server_start")
 async def init(app, loop):
-    app.sem = asyncio.Semaphore(100, loop=loop)
+    app.sem = asyncio.Semaphore(100)
     app.session = aiohttp.ClientSession(loop=loop)
     app.mongo = MongoClientHelper()
     logger.info("Using %s as project cache directory" % str(CACHEDIR))
@@ -112,11 +112,13 @@ async def get_project_info(request, project: str):
     project_info = await fetch_project(app, owner, repo)
     if not project_info.get("version"):
         abort(404, "Version not found")
+    if "is_ci" in request.args:
+        project_info["is_ci"] = True
     await app.mongo.insert_project(request_ip, owner, repo, project_info)
     # get request information
     await fetch_request_info(app, request_ip)
     # keys exclude for response
-    crud = ("status", "last_update", "cached")
+    crud = ("status", "last_update", "cached", "stats")
     for k in crud:
         if k in project_info:
             del project_info[k]

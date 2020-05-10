@@ -53,11 +53,12 @@ async def query_project_cache(owner, repo, stale_time=21600):
     return project_info
 
 
-async def write_project_cache(owner, repo, project_info):
+async def write_project_cache(owner, repo, project_info, update=True):
     """
     Write project information to cached file
     """
     cache = CACHEDIR / "{}--{}.json".format(owner, repo)
-    project_info["last_update"] = await get_current_time()
+    if update:
+        project_info["last_update"] = await get_current_time()
     async with aiofiles.open(str(cache), "w") as fp:
         await fp.write(json.dumps(project_info))
