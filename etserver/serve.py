@@ -76,7 +76,6 @@ LOG_SETTINGS = dict(
 app = Sanic("etelemetry", log_config=LOG_SETTINGS)
 if os.getenv("ETELEMETRY_APP_CONFIG"):
     app.config.from_envvar("ETELEMETRY_APP_CONFIG")
-app.upload_config({"RESPONSE_TIMEOUT": 300, "REQUEST_TIMEOUT": 300, "KEEP_ALIVE_TIMEOUT": 15})
 
 
 @app.listener("before_server_start")
