@@ -147,15 +147,16 @@ async def get_project_stats(request, project: str):
     return response.text("\n".join(out))
 
 
-@app.route("/")
+@app.route("/", methods=["GET", "HEAD"])
 async def server_info(request):
-    return response.json(
-        {
-            "package": "etelemetry-server",
-            "version": __version__,
-            "message": "ET phones home",
-        }
-    )
+    if request.method == "HEAD":
+        return response.empty()
+    return response.json({
+        "package": "etelemetry-server",
+        "version": __version__,
+        "message": "ET phones home",
+        "accessibility_statement": "http://accessibility.mit.edu/"
+    })
 
 
 def get_parser():
@@ -164,7 +165,7 @@ def get_parser():
     parser = ArgumentParser()
     parser.add_argument("command", choices=("up",), help="action")
     parser.add_argument("--host", default="0.0.0.0", help="hostname")
-    parser.add_argument("--port", default=8000, help="server port")
+    parser.add_argument("--port", default=80, help="server port")
     parser.add_argument("--workers", default=1, help="worker processes")
     return parser
 
