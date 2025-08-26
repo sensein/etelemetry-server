@@ -1,7 +1,7 @@
 # etelemetry-server
 Server for application monitoring and usage statistics.
 
-[Python API](https://github.com/mgxd/etelemetry-client)
+[Python API](https://github.com/sensein/etelemetry-client)
 
 ## Installation
 
